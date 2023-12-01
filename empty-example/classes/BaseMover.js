@@ -5,11 +5,14 @@ class BaseMover {
   acceleration = createVector(0, 0);
   mass = 5;
   maxSpeed = 2;
-  maxForce = 50;
-  angle = 0;
+  maxForce = 0.08;
+  angle = 180;
   angleVelocity = 0;
   angleAcceleration = 0;
   fillColor = "dodgerblue";
+
+  wanderTheta = PI / 2;
+
 
   constructor(location) {
     if (location) this.location = location;
@@ -43,31 +46,35 @@ class BaseMover {
     this.velocity.add(this.acceleration);
     this.velocity.limit(this.maxSpeed);
     this.location.add(this.velocity);
-    this.angle = this.velocity.heading();
+
+    // Point towards heading
+    if (this.velocity.mag() > 0.3) {
+      this.angle = this.velocity.heading()
+    }
     this.acceleration.mult(0);
   }
 
   display() {
-    // noStroke();
     fill(this.fillColor);
     stroke(0)
     push();
     translate(this.location.x, this.location.y);
     rotate(this.angle + PI / 2);
     beginShape();
-    vertex(0, -this.mass * 2);
-    vertex(-this.mass, this.mass * 2);
-    vertex(this.mass, this.mass * 2);
+      vertex(0, -this.mass * 2);
+      vertex(-this.mass, this.mass * 2);
+      vertex(this.mass, this.mass * 2);
     endShape(CLOSE);
-    // translate(this.location.x, this.location.y);
-    // rotate(45);  
-    // circle(this.location.x, this.location.y, 20);
-
     pop();
   }
 
   reverseX() {
     this.velocity.x *= -1;
+  }
+
+  pointInFront(distance) {
+    return createVector(cos(this.angle) * distance, sin(this.angle) * distance)
+   
   }
 
   reverseY() {
@@ -90,5 +97,24 @@ class BaseMover {
     const moverVelocity = this.getVelocity().mult(multiplier);
     const pointInFront = this.location.copy().add(moverVelocity);
     line(this.location.x, this.location.y, pointInFront.x, pointInFront.y);
+  }
+
+  wander() {
+    const wanderPoint = this.velocity.copy();
+    wanderPoint.setMag(100)
+    wanderPoint.add(this.location)
+    const wanderRadius = 50;
+
+    let theta = this.wanderTheta + this.velocity.heading();
+    let x = cos(theta) * wanderRadius
+    let y = sin(theta) * wanderRadius
+
+    wanderPoint.add(x, y);
+    let steer = p5.Vector.sub(wanderPoint, this.location)
+    steer.setMag(this.maxForce)
+
+    this.applyForce(steer.x, steer.y)
+    const randomDisplacement = 0.3
+    this.wanderTheta += random(-randomDisplacement, randomDisplacement)
   }
 }
